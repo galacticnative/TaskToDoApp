@@ -1,6 +1,7 @@
 var taskIdCounter = 0; //a counter that increments by one each time a task is created
 var formEl = document.querySelector("#task-form");
 var tasksToDoEl = document.querySelector("#tasks-to-do");
+var pageContentEl = document.querySelector("#page-content"); //refs the id page-content in main html element 
 
 //refractored from createTaskHanlder to taskFormHandler
 var taskFormHandler = function(event) {
@@ -94,3 +95,47 @@ var createTaskActions = function(taskId) {
 };
 //submits the info created from the create task function
 formEl.addEventListener("submit", taskFormHandler); 
+
+var taskButtonHandler = function(event) {
+    // get target element from event
+    var targetEl = event.target;
+
+    // edit button was clicked
+    if (targetEl.matches(".edit-btn")) {
+    var taskId = targetEl.getAttribute("data-task-id");
+    editTask(taskId);
+    } 
+    // delete button was clicked
+    else if (targetEl.matches(".delete-btn")) {
+    var taskId = targetEl.getAttribute("data-task-id");
+    deleteTask(taskId);
+    }
+};
+
+//function to delete tasks ie task id's
+var deleteTask = function(taskId) {
+    var taskSelected = document.querySelector(".task-item[data-task-id='" + taskId + "']");
+    taskSelected.remove();
+};
+
+//function to edit tasks 
+var editTask = function(taskId) {
+    console.log("editing task #" + taskId);
+  
+    // get task list item element
+    var taskSelected = document.querySelector(".task-item[data-task-id='" + taskId + "']");
+    
+    // get content from task name and type
+    var taskName = taskSelected.querySelector("h3.task-name").textContent;
+
+    var taskType = taskSelected.querySelector("span.task-type").textContent;
+    
+    document.querySelector("input[name='task-name']").value = taskName;
+    document.querySelector("select[name='task-type']").value = taskType;
+    
+    formEl.setAttribute("data-task-id", taskId);
+    
+    document.querySelector("#save-task").textContent = "Save Task";
+};
+
+pageContentEl.addEventListener("click", taskButtonHandler);
