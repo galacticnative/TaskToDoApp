@@ -12,4 +12,4 @@ Created by UofA Coding Bootcamp and refractored by Brandi Curley
 ## Link to webpage:
 https://galacticnative.github.io/taskinator/
 
-[!picture](./assets/images/webpage-overview.png)
+![picture](./assets/images/webpage-overview.png)
