@@ -4,6 +4,7 @@ var tasksToDoEl = document.querySelector("#tasks-to-do");
 var pageContentEl = document.querySelector("#page-content"); //refs the id page-content in main html element 
 var tasksInProgressEl = document.querySelector("#tasks-in-progress");
 var tasksCompletedEl = document.querySelector("#tasks-completed");
+
 var tasks = []; //created array for tasks to store to local storage
 
 //refractored from createTaskHanlder to taskFormHandler
@@ -62,8 +63,7 @@ var completeEditTask = function(taskName, taskType, taskId) {
 
     //remove data from attribute from the form
     formEl.removeAttribute("data-task-id");
-    //update formEl button to go back to saying "Add task" instead of "Edit task"
-    document.querySelector("#save-task").textContent = "Add Task";
+    formEl.querySelector("#save-task").textContent = "Add Task";
 };
 
 var createTaskEl = function(taskDataObj) {
@@ -88,9 +88,23 @@ var createTaskEl = function(taskDataObj) {
     var taskActionsEl = createTaskActions(taskIdCounter);
     listItemEl.appendChild(taskActionsEl);
 
-    // add entire list item to list
-    tasksToDoEl.appendChild(listItemEl);
-
+    switch (taskDataObj.status) {
+        case "to do":
+          taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 0;
+          tasksToDoEl.append(listItemEl);
+          break;
+        case "in progress":
+          taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 1;
+          tasksInProgressEl.append(listItemEl);
+          break;
+        case "completed":
+          taskActionsEl.querySelector("select[name='status-change']").selectedIndex = 2;
+          tasksCompletedEl.append(listItemEl);
+          break;
+        default:
+          console.log("Something went wrong!");
+    }
+    
     //adds object to tasks array at top of js
     taskDataObj.id = taskIdCounter;
 
@@ -142,8 +156,6 @@ var createTaskActions = function(taskId) {
     }
     return actionContainerEl;
 };
-//submits the info created from the create task function
-formEl.addEventListener("submit", taskFormHandler); 
 
 var taskButtonHandler = function(event) {
     // get target element from event
@@ -201,7 +213,7 @@ var editTask = function(taskId) {
     
     formEl.setAttribute("data-task-id", taskId);
     
-    document.querySelector("#save-task").textContent = "Save Task";
+    formEl.querySelector("#save-task").textContent = "Save Task";
 };
 
 var taskStatusChangeHandler = function(event) {
@@ -236,10 +248,10 @@ var taskStatusChangeHandler = function(event) {
 };
 
 var dragTaskHandler = function(event) {
-    var taskId = event.target.getAttribute("data-task-id");
-    event.dataTransfer.setData("text/plain", taskId);
-    var getId = event.dataTransfer.getData("text/plain");
-    console.log("getId:", getId, typeof getId);
+    if (event.target.matches("li.task-item")) {
+        var taskId = event.target.getAttribute("data-task-id");
+        event.dataTransfer.setData("text/plain", taskId);
+    }    
 };
 
 var dropZoneDragHandler = function(event) {
@@ -251,24 +263,32 @@ var dropZoneDragHandler = function(event) {
 };
 
 var dropTaskHandler = function(event) {
+    event.preventDefault();
     var id = event.dataTransfer.getData("text/plain");
     var draggableElement = document.querySelector("[data-task-id='" + id + "']");
     var dropZoneEl = event.target.closest(".task-list");
+    console.log(dropZoneEl);
     var statusType = dropZoneEl.id;
     // set status of task based on dropZone id
     var statusSelectEl = draggableElement.querySelector("select[name='status-change']");
-    if (statusType === "tasks-to-do") {
-        statusSelectEl.selectedIndex = 0;
-    } 
-    else if (statusType === "tasks-in-progress") {
-        statusSelectEl.selectedIndex = 1;
-    } 
-    else if (statusType === "tasks-completed") {
-        statusSelectEl.selectedIndex = 2;
+    
+    // create variable to hold status
+    var newStatus;
+
+    switch (statusType) {
+        case "tasks-to-do":
+            statusSelectEl.selectedIndex = 0;
+            break;
+        case "tasks-in-progress":
+            statusSelectEl.selectedIndex = 1;
+            break;
+        case "tasks-completed":
+            statusSelectEl.selectedIndex = 2;
+            break;
+        default:
+            console.log("Something went wrong!");
     }
 
-    dropZoneEl.removeAttribute("style"); //removes CSS styling right before drop
-    dropZoneEl.appendChild(draggableElement);
 
     // loop through tasks array to find and update the updated task's status
     for (var i = 0; i < tasks.length; i++) {
@@ -279,19 +299,42 @@ var dropTaskHandler = function(event) {
     //push Tasks to local storage
     saveTasks();
   
-  console.log(tasks);
+    dropZoneEl.removeAttribute("style");
+    dropZoneEl.appendChild(draggableElement);
 };
 
 var dragLeaveHandler = function(event) {
     var taskListEl = event.target.closest(".task-list");
     if (taskListEl) {
-    taskListEl.removeAttribute("style");
-    }
+        event.target.closest(".task-list").removeAttribute("style");
+    }    
 }
 
 var saveTasks = function() {
     localStorage.setItem("tasks", JSON.stringify(tasks));
 }
+
+var loadTasks = function() {
+    var savedTasks = localStorage.getItem("tasks");
+    // if there are no tasks, set tasks to an empty array and return out of the function
+    if (!savedTasks) {
+        return false;
+    }
+    console.log("Saved tasks found!");
+    // else, load up saved tasks
+
+    // parse into array of objects
+    savedTasks = JSON.parse(savedTasks);
+
+    // loop through savedTasks array
+    for (var i = 0; i < savedTasks.length; i++) {
+        // pass each task object into the `createTaskEl()` function
+        createTaskEl(savedTasks[i]);
+    }
+};
+
+//submits the info created from the create task function
+formEl.addEventListener("submit", taskFormHandler); 
 
 pageContentEl.addEventListener("click", taskButtonHandler);
 
@@ -304,3 +347,5 @@ pageContentEl.addEventListener("dragover", dropZoneDragHandler);
 pageContentEl.addEventListener("drop", dropTaskHandler);
 
 pageContentEl.addEventListener("dragleave", dragLeaveHandler);
+
+loadTasks();
